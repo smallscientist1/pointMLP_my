@@ -1,4 +1,5 @@
 # 大作业3
+网络模型在目录classification_ScanObjectNN下。
 ## 数据增广修改:
 - ScanObjectNN_V2.py: 修改`ScanObjectNN(Dataset)`类的`__getitem__`方法
 ## 网络结构修改:
