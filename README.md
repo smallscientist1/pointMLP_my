@@ -1,3 +1,17 @@
+# 大作业3
+## 数据增广修改:
+- ScanObjectNN_V2.py: 修改`ScanObjectNN(Dataset)`类的`__getitem__`方法
+## 网络结构修改:
+- mymodels/my_pointmlp_V1.py: 修改`LocalGrouper`类
+- mymodels/my_pointmlp_V2.py: 添加`PosExtractionV2`类,`LocalAggregation`类
+- mymodels/my_pointmlp_V3.py: 修改`PosExtractionV2`类,`LocalAggregation`类
+## 训练参数更改
+- 添加mytrain.py
+
+具体更改内容参见报告及代码注释。
+以下是原论文的readme.md。
+***
+
 # Rethinking Network Design and Local Geometry in Point Cloud: A Simple Residual MLP Framework （ICLR 2022）
 
 
