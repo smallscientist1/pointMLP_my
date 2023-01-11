@@ -19,5 +19,3 @@ dependencies:
   - torchvision=0.9.1
   - tqdm=4.61.1
   - pip
-  - pip:
-    - pointnet2_ops_lib/.

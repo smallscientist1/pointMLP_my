@@ -106,7 +106,7 @@ def main():
         checkpoint_path = os.path.join(args.checkpoint, "last_checkpoint.pth")
         checkpoint = torch.load(checkpoint_path)
         net.load_state_dict(checkpoint['net'])
-        start_epoch = checkpoint['epoch']
+        start_epoch = checkpoint['epoch']+1
         best_test_acc = checkpoint['best_test_acc']
         best_train_acc = checkpoint['best_train_acc']
         best_test_acc_avg = checkpoint['best_test_acc_avg']
