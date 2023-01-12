@@ -210,6 +210,9 @@ def furthest_point_sample(xyz, npoint):
     return centroids
 
 class ConvBNReLU1D(nn.Module):
+    '''
+    MLP
+    '''
     def __init__(self, in_channels, out_channels, kernel_size=1, bias=True, activation='relu'):
         super(ConvBNReLU1D, self).__init__()
         self.act = get_activation(activation)
@@ -224,6 +227,9 @@ class ConvBNReLU1D(nn.Module):
 
 
 class ConvBNReLURes1D(nn.Module):
+    '''
+    残差块
+    '''
     def __init__(self, channel, kernel_size=1, groups=1, res_expansion=1.0, bias=True, activation='relu'):
         super(ConvBNReLURes1D, self).__init__()
         self.act = get_activation(activation)
@@ -304,23 +310,18 @@ class PosExtraction(nn.Module):
         return self.operation(x)
 
 class PosExtractionV2(nn.Module):
+    '''
+    \Phi_{pos}
+    '''
     def __init__(self, channels,scale_up_idx, blocks=1, groups=1, res_expansion=1, bias=True, activation='relu',kneighbors=24):
         """
         input[b,d,g]; output[b,d,g]
-        :param channels:
-        :param blocks:
+        :param channels:维度数d
+        :param kneighbors: KNN算法的邻居数K
         """
         super(PosExtractionV2, self).__init__()
 
         self.group = LocalAggregation(channels,kneighbors=kneighbors,scale_up_idx=scale_up_idx)
-        '''
-        operation = []
-        for _ in range(blocks):
-            operation.append(
-                ConvBNReLURes1D(channels, groups=groups, res_expansion=res_expansion, bias=bias, activation=activation)
-            )
-        self.operation = nn.Sequential(*operation)
-        '''
         self.MLP2 = ConvBNReLU1D(channels, channels*4, bias=bias, activation=activation)
         self.MLP3 = ConvBNReLU1D(channels*4, channels, bias=bias, activation=None)
 
@@ -333,12 +334,14 @@ class PosExtractionV2(nn.Module):
         return x
 
 class LocalAggregation(nn.Module):
+    '''
+    \Phi_{pos} 中的 Group操作
+    '''
     def __init__(self, channel, kneighbors, scale_up_idx, use_xyz=True, normalize="anchor", **kwargs):
         """
-        Give xyz[b,p,3] and fea[b,p,d], return new_xyz[b,g,3] and new_fea[b,g,k,d]
-        :param groups: groups number
+        Give xyz[b,p,3] and fea[b,p,d], return new_xyz[b,p,3] and new_fea[b,p,k,d]
+        :param channels:维度数d
         :param kneighbors: k-nerighbors
-        :param kwargs: others
         """
         super(LocalAggregation, self).__init__()
         self.kneighbors = kneighbors
@@ -371,6 +374,9 @@ class LocalAggregation(nn.Module):
 
 
 class Model(nn.Module):
+    '''
+    模型
+    '''
     def __init__(self, points=1024, class_num=40, embed_dim=64, groups=1, res_expansion=1.0,
                  activation="relu", bias=True, use_xyz=True, normalize="center",
                  dim_expansion=[2, 2, 2, 2], pre_blocks=[2, 2, 2, 2], pos_blocks=[2, 2, 2, 2],
@@ -429,10 +435,12 @@ class Model(nn.Module):
         batch_size, _, _ = x.size()
         x = self.embedding(x)  # B,D,N
         for i in range(self.stages):
+            # grouper
             # Give xyz[b, p, 3] and fea[b, p, d], return new_xyz[b, g, 3] and new_fea[b, g, k, d]
             xyz, x = self.local_grouper_list[i](xyz, x.permute(0, 2, 1))  # [b,g,3]  [b,g,k,d]
+            # \Phi_{pre}, resblock+maxpooling
             x = self.pre_blocks_list[i](x)  # [b,d,g]
-            # x = self.pos_blocks_list[i](x)  # [b,d,g]
+            # \Phi_{pos}, myresblock
             x = self.pos_blocks_list[i](xyz,x)  # [b,d,g]
 
         x = F.adaptive_max_pool1d(x, 1).squeeze(dim=-1)

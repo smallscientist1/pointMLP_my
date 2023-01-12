@@ -1,9 +1,9 @@
 """
 for training with resume functions.
 Usage:
-python main.py --model PointNet --msg demo
+python main.py --model pointMLPElite --msg demo
 or
-CUDA_VISIBLE_DEVICES=0 nohup python main.py --model PointNet --msg demo > nohup/PointNet_demo.out &
+CUDA_VISIBLE_DEVICES=0 nohup python main.py --model pointMLPElite  --msg demo > nohup/PointNet_demo.out &
 """
 import argparse
 import os
@@ -16,9 +16,9 @@ import torch.optim
 import torch.utils.data
 import torch.utils.data.distributed
 from torch.utils.data import DataLoader
-import mymodels as models
+import mymodels as models # import模型
 from utils import Logger, mkdir_p, progress_bar, save_model, save_args, cal_loss
-from ScanObjectNN_V2 import ScanObjectNN
+from ScanObjectNN_V2 import ScanObjectNN # import数据集
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import sklearn.metrics as metrics
 import numpy as np
@@ -33,7 +33,7 @@ def parse_args():
     parser.add_argument('--batch_size', type=int, default=32, help='batch size in training')
     parser.add_argument('--model', default='PointNet', help='model name [default: pointnet_cls]')
     parser.add_argument('--num_classes', default=15, type=int, help='default value for classes of ScanObjectNN')
-    parser.add_argument('--epoch', default=200, type=int, help='number of epoch in training')
+    parser.add_argument('--epoch', default=50, type=int, help='number of epoch in training')
     parser.add_argument('--num_points', type=int, default=1024, help='Point Number')
     parser.add_argument('--learning_rate', default=0.01, type=float, help='learning rate in training')
     parser.add_argument('--weight_decay', type=float, default=1e-4, help='decay rate')
@@ -44,6 +44,7 @@ def parse_args():
 
 
 def main():
+    # 解析参数
     args = parse_args()
     os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
     if args.seed is not None:
@@ -75,7 +76,7 @@ def main():
         screen_logger.info(str)
         print(str)
 
-    # Model
+    # 实例化Model
     printf(f"args: {args}")
     printf('==> Building model..')
     net = models.__dict__[args.model](num_classes=args.num_classes)
@@ -116,17 +117,20 @@ def main():
         logger = Logger(os.path.join(args.checkpoint, 'log.txt'), title="ModelNet" + args.model, resume=True)
         optimizer_dict = checkpoint['optimizer']
 
+    # 准备dataset
     printf('==> Preparing data..')
     train_loader = DataLoader(ScanObjectNN(partition='training', num_points=args.num_points), num_workers=args.workers,
                               batch_size=args.batch_size, shuffle=True, drop_last=True)
     test_loader = DataLoader(ScanObjectNN(partition='test', num_points=args.num_points), num_workers=args.workers,
                              batch_size=args.batch_size, shuffle=True, drop_last=False)
 
+    # 准备optimizer
     optimizer = torch.optim.SGD(net.parameters(), lr=args.learning_rate, momentum=0.9, weight_decay=args.weight_decay)
     if optimizer_dict is not None:
         optimizer.load_state_dict(optimizer_dict)
     scheduler = CosineAnnealingLR(optimizer, args.epoch, eta_min=args.learning_rate / 100, last_epoch=start_epoch - 1)
 
+    # 开始训练与验证
     for epoch in range(start_epoch, args.epoch):
         printf('Epoch(%d/%s) Learning Rate %s:' % (epoch + 1, args.epoch, optimizer.param_groups[0]['lr']))
         train_out = train(net, train_loader, optimizer, criterion, device)  # {"loss", "acc", "acc_avg", "time"}
@@ -146,6 +150,7 @@ def main():
         best_test_loss = test_out["loss"] if (test_out["loss"] < best_test_loss) else best_test_loss
         best_train_loss = train_out["loss"] if (train_out["loss"] < best_train_loss) else best_train_loss
 
+        # 保存模型
         save_model(
             net, epoch, path=args.checkpoint, acc=test_out["acc"], is_best=is_best,
             best_test_acc=best_test_acc,  # best test accuracy
@@ -175,6 +180,9 @@ def main():
 
 
 def train(net, trainloader, optimizer, criterion, device):
+    '''
+    训练一个epoch
+    '''
     net.train()
     train_loss = 0
     correct = 0
@@ -214,6 +222,9 @@ def train(net, trainloader, optimizer, criterion, device):
 
 
 def validate(net, testloader, criterion, device):
+    '''
+    validate
+    '''
     net.eval()
     test_loss = 0
     correct = 0

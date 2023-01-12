@@ -65,19 +65,23 @@ def rotate_pointcloud(pointcloud):
 
 
 class ScanObjectNN(Dataset):
+    '''
+    ScanObjectNN 数据集
+    '''
     def __init__(self, num_points, partition='training'):
         self.data, self.label = load_scanobjectnn_data(partition)
         self.num_points = num_points
         self.partition = partition
 
     def __getitem__(self, item):
-        # pointcloud = self.data[item][:self.num_points]
+        # 随机采样
         pointcloud = self.data[item]
         np.random.shuffle(pointcloud)
         pointcloud = pointcloud[:self.num_points]
 
         label = self.label[item]
         if self.partition == 'training':
+            # 平移
             pointcloud = translate_pointcloud(pointcloud)
             np.random.shuffle(pointcloud)
         return pointcloud, label

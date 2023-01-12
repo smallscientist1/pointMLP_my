@@ -8,7 +8,11 @@
 - mymodels/my_pointmlp_V3.py: 修改`PosExtractionV2`类,`LocalAggregation`类
 ## 训练参数更改
 - 添加mytrain.py
-
+## 代码运行
+```
+cd classification_ScanObjectNN
+python mytrain.py --model pointMLPElite
+```
 具体更改内容参见报告及代码注释。
 以下是原论文的readme.md。
 ***
