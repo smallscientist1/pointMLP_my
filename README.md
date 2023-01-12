@@ -13,6 +13,10 @@
 cd classification_ScanObjectNN
 python mytrain.py --model pointMLPElite
 ```
+## 运行结果
+- 复现论文结果: checkpoints/
+- 改进后的实验结果: my_checkpoints/
+
 具体更改内容参见报告及代码注释。
 以下是原论文的readme.md。
 ***
